@@ -1,0 +1,106 @@
+{
+  "timestamp": "",
+  "mode": "paper",
+  "timeframe": "4h",
+  "symbols": [
+    {
+      "symbol": "BTC-USDT-SWAP",
+      "direction": "buy",
+      "score_total": 0,
+      "score_breakdown": {
+        "ma_structure": 0,
+        "macd": 0,
+        "price_structure": 0,
+        "oi": 0,
+        "funding_penalty": 0,
+        "atr_adjustment": 0,
+        "event_adjustment": 0
+      },
+      "soft_flags": [],
+      "hard_flags": [],
+      "notes": ""
+    },
+    {
+      "symbol": "ETH-USDT-SWAP",
+      "direction": "buy",
+      "score_total": 0,
+      "score_breakdown": {
+        "ma_structure": 0,
+        "macd": 0,
+        "price_structure": 0,
+        "oi": 0,
+        "funding_penalty": 0,
+        "atr_adjustment": 0,
+        "event_adjustment": 0
+      },
+      "soft_flags": [],
+      "hard_flags": [],
+      "notes": ""
+    },
+    {
+      "symbol": "SOL-USDT-SWAP",
+      "direction": "buy",
+      "score_total": 0,
+      "score_breakdown": {
+        "ma_structure": 0,
+        "macd": 0,
+        "price_structure": 0,
+        "oi": 0,
+        "funding_penalty": 0,
+        "atr_adjustment": 0,
+        "event_adjustment": 0
+      },
+      "soft_flags": [],
+      "hard_flags": [],
+      "notes": ""
+    }
+    {
+      "symbol": "XRP-USDT-SWAP",
+      "direction": "buy",
+      "score_total": 0,
+      "score_breakdown": {
+        "ma_structure": 0,
+        "macd": 0,
+        "price_structure": 0,
+        "oi": 0,
+        "funding_penalty": 0,
+        "atr_adjustment": 0,
+        "event_adjustment": 0
+      },
+      "soft_flags": [],
+      "hard_flags": [],
+      "notes": ""
+    }
+  ],
+    "best_symbol": "",
+    "second_symbol": "",
+    "score_gap": 0,
+    "entry_tier": "",
+    "candidate_decision": ""
+  },
+  "risk_check": {
+    "account_equity": 0,
+    "daily_drawdown": 0,
+    "open_positions": 0,
+    "hedge_conflict": false,
+    "risk_check_passed": false
+  },
+  "position_sizing": {
+    "entry_price": 0,
+    "stop_loss_price": 0,
+    "risk_budget": 0,
+    "unit_risk": 0,
+    "raw_sz": 0,
+    "final_sz": 0,
+    "size_status": "",
+    "size_reason_code": ""
+  },
+  "final_decision": {
+    "decision": "watch",
+    "symbol": "",
+    "side": "",
+    "reason_codes": [],
+    "is_hard_reject": false,
+    "is_soft_reject": false
+  }
+}

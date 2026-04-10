@@ -1,0 +1,22 @@
+{
+  "timestamp": "",
+  "mode": "paper",
+  "symbol": "",
+  "side": "",
+  "entry_tier": "",
+  "score_at_entry": 0,
+  "score_gap": 0,
+  "entry_price": 0,
+  "stop_loss_price": 0,
+  "risk_budget": 0,
+  "unit_risk": 0,
+  "sz": 0,
+  "ordType": "market",
+  "tag": "agentTradeKit",
+  "order_status": "",
+  "stoploss_status": "",
+  "reason_codes": [],
+  "soft_flags": [],
+  "hard_flags": [],
+  "notes": ""
+}

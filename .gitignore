@@ -1,0 +1,15 @@
+# Runtime outputs — contain account data, not for public repo
+decision_snapshots/
+trade_records/
+run.lock
+
+# Per-run working files
+position_input.json
+position_output.json
+market_input.json
+score_output.json
+daily_review_output.json
+account_risk_check.json
+
+# macOS
+.DS_Store

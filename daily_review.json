@@ -1,0 +1,80 @@
+{
+  "date": "",
+  "mode": "paper",
+  "timeframe": "4h",
+  "summary": {
+    "total_runs": 0,
+    "open_count": 0,
+    "watch_count": 0,
+    "skip_count": 0,
+    "opened_symbols_count": 0
+  },
+  "symbols": {
+    "BTC-USDT-SWAP": {
+      "selected_count": 0,
+      "opened_count": 0,
+      "avg_score": 0,
+      "strong_entry_count": 0,
+      "conservative_entry_count": 0
+    },
+    "ETH-USDT-SWAP": {
+      "selected_count": 0,
+      "opened_count": 0,
+      "avg_score": 0,
+      "strong_entry_count": 0,
+      "conservative_entry_count": 0
+    },
+    "SOL-USDT-SWAP": {
+      "selected_count": 0,
+      "opened_count": 0,
+      "avg_score": 0,
+      "strong_entry_count": 0,
+      "conservative_entry_count": 0
+    }
+    "XRP-USDT-SWAP": {
+      "selected_count": 0,
+      "opened_count": 0,
+      "avg_score": 0,
+      "strong_entry_count": 0,
+      "conservative_entry_count": 0
+    }
+  },
+    "LOW_SCORE": 0,
+    "SCORE_GAP_TOO_SMALL": 0,
+    "TREND_NOT_CLEAR": 0,
+    "PRICE_STRUCTURE_WEAK": 0,
+    "FUNDING_CROWDED": 0,
+    "OI_PRICE_DIVERGENCE": 0,
+    "ATR_TOO_HIGH": 0,
+    "ATR_TOO_LOW": 0,
+    "EVENT_CONFLICT": 0,
+    "EVENT_MISSING": 0,
+    "SZ_INVALID": 0,
+    "NET_VALUE_UNAVAILABLE": 0,
+    "ACCOUNT_RISK_LIMIT": 0,
+    "DAILY_DRAWDOWN_LIMIT": 0,
+    "MAX_POSITIONS_REACHED": 0,
+    "HEDGE_CONFLICT": 0,
+    "STOPLOSS_SETUP_RISK": 0,
+    "DATA_MISSING": 0
+  },
+  "execution_stats": {
+    "strong_entry_open_count": 0,
+    "conservative_entry_open_count": 0,
+    "order_success_count": 0,
+    "order_failed_count": 0,
+    "stoploss_success_count": 0,
+    "stoploss_failed_count": 0,
+    "size_calc_failed_count": 0
+  },
+  "daily_goal_check": {
+    "target_min_trades_per_day": 1,
+    "target_max_symbols_per_day": 2,
+    "target_met": false
+  },
+  "review_notes": {
+    "main_problem": "",
+    "secondary_problem": "",
+    "suggestions": []
+  }
+}
