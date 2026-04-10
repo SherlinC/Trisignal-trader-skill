@@ -344,6 +344,17 @@ def select_candidate(scored_assets: List[Dict[str, Any]], params: Dict[str, Any]
     second = ranked[1]
     gap = best["score_total"] - second["score_total"]
 
+    # BTC anchor direction filter
+    # If BTC is scored and its direction conflicts with the best candidate, penalize
+    btc_anchor_penalty = 0
+    btc_scored = next((a for a in scored_assets if a["symbol"] == "BTC-USDT-SWAP"), None)
+    if btc_scored and btc_scored["direction"] != "neutral" and best["symbol"] != "BTC-USDT-SWAP":
+        if btc_scored["direction"] != best["direction"]:
+            btc_anchor_penalty = 6
+            best = dict(best, score_total=best["score_total"] - btc_anchor_penalty,
+                        notes=f"BTC anchor conflict penalty -{btc_anchor_penalty}")
+            gap = best["score_total"] - second["score_total"]
+
     if best["score_total"] >= strong_threshold and gap >= min_gap_strong and not best["hard_flags"]:
         entry_tier = "strong_entry"
         candidate_decision = "open"

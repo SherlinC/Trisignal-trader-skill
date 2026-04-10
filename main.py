@@ -302,6 +302,19 @@ def main():
             _write_snapshot(ts, mode, scored, ranking, candidate_decision, [], arc, None)
             return
 
+        # --- Check 1: Skip if already holding same symbol + same direction ---
+        pos_side_map = {"buy": "long", "sell": "short"}
+        existing_same = any(
+            p.get("instId") == candidate_symbol
+            and p.get("posSide") == pos_side_map[candidate_side]
+            and float(p.get("pos", 0)) != 0
+            for p in positions
+        )
+        if existing_same:
+            print(f"  Already holding {candidate_symbol} {candidate_side}, skipping (no pyramid this cycle)")
+            _write_snapshot(ts, mode, scored, ranking, "watch", ["EXISTING_POSITION_SAME_SIDE"], arc, None)
+            return
+
         # --- Step 4: Position sizing ---
         hard = params.get("hard_constraints", {})
         pos_rules = params.get("position_rules", {})
@@ -360,22 +373,42 @@ def main():
             except Exception:
                 pass
 
+            if sz <= 0:
+                print(f"  sz=0 after cap, skipping")
+                _write_snapshot(ts, mode, scored, ranking, "skip", ["SZ_TOO_SMALL"], arc, sizing)
+                return
+
             order_result = place_order(candidate_symbol, candidate_side, sz, profile)
             print(f"  Order: {order_result['status']}")
+
             if order_result["status"] == "success":
-                # Use actual fill price for stop-loss if available, else fall back to entry_price
-                fill_price = order_result.get("fill_price", entry_price)
-                actual_sl = fill_price * (1 - sl_pct) if candidate_side == "buy" else fill_price * (1 + sl_pct)
-                # Guard: short SL must be above current price, long SL must be below
+                # Compute stop-loss price from current market price
                 current_price = assets[[a["symbol"] for a in assets].index(candidate_symbol)]["close"]
-                if candidate_side == "sell" and actual_sl <= current_price:
-                    actual_sl = current_price * (1 + sl_pct)
-                elif candidate_side == "buy" and actual_sl >= current_price:
-                    actual_sl = current_price * (1 - sl_pct)
-                sl_result = place_stoploss(candidate_symbol, candidate_side, sz, actual_sl, profile)
+                actual_sl = current_price * (1 - sl_pct) if candidate_side == "buy" else current_price * (1 + sl_pct)
+
+                # Retry stop-loss up to 2 times
+                sl_result = {"status": "failed"}
+                for attempt in range(3):
+                    sl_result = place_stoploss(candidate_symbol, candidate_side, sz, actual_sl, profile)
+                    if sl_result["status"] == "success":
+                        break
+                    print(f"  Stoploss attempt {attempt+1} failed: {sl_result.get('error')}")
+                    import time; time.sleep(1)
+
                 print(f"  Stoploss: {sl_result['status']} (trigger={actual_sl:.4f})")
+
+                # If stoploss still failed after retries — close position immediately
                 if sl_result["status"] == "failed":
-                    print(f"  WARNING: Stoploss setup failed! {sl_result.get('error')}")
+                    print(f"  CRITICAL: Stoploss failed after 3 attempts — closing position to protect capital")
+                    close_side = "sell" if candidate_side == "buy" else "buy"
+                    close_pos_side = "long" if candidate_side == "buy" else "short"
+                    subprocess.run(
+                        ["okx", "--profile", profile, "swap", "close",
+                         "--instId", candidate_symbol, "--mgnMode", "isolated",
+                         "--posSide", close_pos_side],
+                        capture_output=True, text=True
+                    )
+                    order_result["status"] = "closed_no_stoploss"
 
         # --- Step 6: Log ---
         _write_snapshot(ts, mode, scored, ranking, "open", [], arc, sizing)
