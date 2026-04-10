@@ -47,8 +47,15 @@ def okx(args: list, profile: str) -> dict:
 
 
 def fetch_candles(symbol: str, profile: str) -> list:
-    data = okx(["market", "candles", symbol, "--bar", "4H", "--limit", "80"], profile)
-    return data.get("data", [])
+    result = subprocess.run(
+        ["okx", "--profile", profile, "market", "candles", symbol, "--bar", "4H", "--limit", "80", "--json"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+    data = json.loads(result.stdout)
+    # CLI returns either a list directly or {"data": [...]}
+    return data if isinstance(data, list) else data.get("data", [])
 
 
 def calc_indicators(candles: list) -> dict:
@@ -100,16 +107,25 @@ def fetch_sentiment(symbol: str, profile: str) -> dict:
     funding_rate = 0.0
     oi_change_pct = 0.0
     try:
-        fr = okx(["market", "funding-rate", symbol], profile)
-        funding_rate = float(fr.get("data", [{}])[0].get("fundingRate", 0))
+        result = subprocess.run(
+            ["okx", "--profile", profile, "market", "funding-rate", symbol, "--json"],
+            capture_output=True, text=True
+        )
+        fr = json.loads(result.stdout)
+        fr_list = fr if isinstance(fr, list) else fr.get("data", [])
+        funding_rate = float(fr_list[0].get("fundingRate", 0)) if fr_list else 0.0
     except Exception:
         pass
     try:
-        oi = okx(["market", "open-interest", "--instType", "SWAP", "--instId", symbol], profile)
-        oi_data = oi.get("data", [])
-        if len(oi_data) >= 2:
-            oi_now = float(oi_data[0].get("oi", 0))
-            oi_prev = float(oi_data[1].get("oi", 1))
+        result = subprocess.run(
+            ["okx", "--profile", profile, "market", "open-interest", "--instType", "SWAP", "--instId", symbol, "--json"],
+            capture_output=True, text=True
+        )
+        oi = json.loads(result.stdout)
+        oi_list = oi if isinstance(oi, list) else oi.get("data", [])
+        if len(oi_list) >= 2:
+            oi_now = float(oi_list[0].get("oi", 0))
+            oi_prev = float(oi_list[1].get("oi", 1))
             oi_change_pct = (oi_now - oi_prev) / oi_prev * 100 if oi_prev else 0
     except Exception:
         pass
@@ -118,38 +134,53 @@ def fetch_sentiment(symbol: str, profile: str) -> dict:
 
 def get_account(profile: str) -> tuple:
     """Returns (equity, positions, daily_drawdown)."""
+    equity = 0
     try:
-        bal = okx(["account", "balance", "USDT"], profile)
-        equity = float(bal.get("data", [{}])[0].get("details", [{}])[0].get("eq", 0))
+        result = subprocess.run(
+            ["okx", "--profile", profile, "account", "balance", "USDT", "--json"],
+            capture_output=True, text=True
+        )
+        bal = json.loads(result.stdout)
+        bal_list = bal if isinstance(bal, list) else bal.get("data", [])
+        if bal_list:
+            details = bal_list[0].get("details", [])
+            equity = float(details[0].get("eq", 0)) if details else 0
     except Exception:
-        equity = 0
+        pass
 
+    positions = []
     try:
-        pos_raw = okx(["account", "positions", "--instType", "SWAP"], profile)
-        positions = pos_raw.get("data", [])
+        result = subprocess.run(
+            ["okx", "--profile", profile, "account", "positions", "--instType", "SWAP", "--json"],
+            capture_output=True, text=True
+        )
+        pos_raw = json.loads(result.stdout)
+        positions = pos_raw if isinstance(pos_raw, list) else pos_raw.get("data", [])
     except Exception:
-        positions = []
+        pass
 
-    # Daily drawdown: simplified — use 0 unless bills data available
     daily_drawdown = 0.0
-
     return equity, positions, daily_drawdown
 
 
 def place_order(symbol: str, side: str, sz: int, profile: str) -> dict:
     pos_side = "long" if side == "buy" else "short"
     try:
-        result = okx([
-            "swap", "place",
-            "--instId", symbol,
-            "--tdMode", "isolated",
-            "--side", side,
-            "--posSide", pos_side,
-            "--ordType", "market",
-            "--sz", str(sz),
-            "--tag", "agentTradeKit"
-        ], profile)
-        return {"status": "success", "data": result}
+        result = subprocess.run(
+            ["okx", "--profile", profile, "swap", "place",
+             "--instId", symbol,
+             "--tdMode", "isolated",
+             "--side", side,
+             "--posSide", pos_side,
+             "--ordType", "market",
+             "--sz", str(sz),
+             "--tag", "agentTradeKit"],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return {"status": "failed", "error": result.stderr.strip()}
+        out = result.stdout.strip()
+        return {"status": "success", "data": json.loads(out) if out and out.startswith("{") else out}
     except Exception as e:
         return {"status": "failed", "error": str(e)}
 
@@ -158,18 +189,23 @@ def place_stoploss(symbol: str, side: str, sz: int, sl_price: float, profile: st
     close_side = "sell" if side == "buy" else "buy"
     pos_side = "long" if side == "buy" else "short"
     try:
-        result = okx([
-            "swap", "place-algo",
-            "--instId", symbol,
-            "--tdMode", "isolated",
-            "--side", close_side,
-            "--posSide", pos_side,
-            "--ordType", "conditional",
-            "--sz", str(sz),
-            "--slTriggerPx", str(round(sl_price, 6)),
-            "--slOrdPx=-1"
-        ], profile)
-        return {"status": "success", "data": result}
+        result = subprocess.run(
+            ["okx", "--profile", profile, "swap", "algo", "place",
+             "--instId", symbol,
+             "--tdMode", "isolated",
+             "--side", close_side,
+             "--posSide", pos_side,
+             "--sz", str(sz),
+             "--slTriggerPx", str(round(sl_price, 4)),
+             "--slOrdPx=-1"],
+            capture_output=True, text=True
+        )
+        if result.returncode != 0:
+            return {"status": "failed", "error": result.stderr}
+        out = result.stdout.strip()
+        if not out:
+            return {"status": "success", "data": {}}
+        return {"status": "success", "data": json.loads(out) if out.startswith(("{", "[")) else out}
     except Exception as e:
         return {"status": "failed", "error": str(e)}
 
@@ -191,6 +227,7 @@ def main():
         params = load_params()
         mode = args.mode or params.get("mode", "paper")
         profile = args.profile
+        symbols = params.get("symbols", SYMBOLS)
         now = datetime.now(timezone.utc)
         ts = now.isoformat()
 
@@ -198,7 +235,7 @@ def main():
 
         # --- Step 1: Fetch market data ---
         assets = []
-        for symbol in SYMBOLS:
+        for symbol in symbols:
             try:
                 candles = fetch_candles(symbol, profile)
                 if len(candles) < 20:
@@ -237,6 +274,13 @@ def main():
         equity, positions, daily_drawdown = get_account(profile)
         candidate_symbol = ranking["best_symbol"]
         candidate_side = ranking["best_direction"]  # "buy" or "sell"
+        symbol_rules = params.get("symbol_rules", {})
+
+        # BTC (or any score_only symbol): skip trading, output watch
+        if symbol_rules.get(candidate_symbol, {}).get("score_only", False):
+            print(f"  {candidate_symbol} is score-only (trade_enabled=false), outputting watch")
+            _write_snapshot(ts, mode, scored, ranking, "watch", ["SCORE_ONLY"], None, None)
+            return
 
         arc = risk_check(
             positions=positions,
@@ -263,7 +307,13 @@ def main():
         pos_rules = params.get("position_rules", {})
         risk_pct = hard.get("risk_per_trade", 0.03)
         sl_pct = hard.get("stop_loss_pct_long", 0.02) if candidate_side == "buy" else hard.get("stop_loss_pct_short", 0.02)
-        risk_multiplier = pos_rules.get("strong_entry_risk_multiplier", 1.0) if ranking["entry_tier"] == "strong_entry" else pos_rules.get("conservative_entry_risk_multiplier", 0.5)
+        risk_multiplier = pos_rules.get("strong_entry_risk_multiplier", 1.0) if ranking["entry_tier"] == "strong_entry" else pos_rules.get("conservative_entry_risk_multiplier", 1.0)
+
+        # Soft rule: DOGE conservative_entry capped at 0.5x
+        sym_rule = symbol_rules.get(candidate_symbol, {})
+        if ranking["entry_tier"] == "conservative_entry":
+            max_multiplier = sym_rule.get("conservative_entry_risk_multiplier_max", risk_multiplier)
+            risk_multiplier = min(risk_multiplier, max_multiplier)
 
         entry_price = assets[[a["symbol"] for a in assets].index(candidate_symbol)]["close"]
         sl_price = entry_price * (1 - sl_pct) if candidate_side == "buy" else entry_price * (1 + sl_pct)
@@ -291,12 +341,39 @@ def main():
         order_result = {"status": "skipped"}
         sl_result = {"status": "skipped"}
 
-        if mode == "paper":
+        if mode in ("paper", "live"):
+            # Cap sz to account's actual max available size
+            try:
+                max_result = subprocess.run(
+                    ["okx", "--profile", profile, "account", "max-size",
+                     "--instId", candidate_symbol, "--tdMode", "isolated", "--json"],
+                    capture_output=True, text=True
+                )
+                max_data = json.loads(max_result.stdout)
+                max_list = max_data if isinstance(max_data, list) else max_data.get("data", [])
+                if max_list:
+                    max_key = "maxBuy" if candidate_side == "buy" else "maxSell"
+                    max_avail = int(float(max_list[0].get(max_key, sz)))
+                    if sz > max_avail:
+                        print(f"  sz capped from {sz} to {max_avail} (account max-size)")
+                        sz = max_avail
+            except Exception:
+                pass
+
             order_result = place_order(candidate_symbol, candidate_side, sz, profile)
             print(f"  Order: {order_result['status']}")
             if order_result["status"] == "success":
-                sl_result = place_stoploss(candidate_symbol, candidate_side, sz, sl_price, profile)
-                print(f"  Stoploss: {sl_result['status']}")
+                # Use actual fill price for stop-loss if available, else fall back to entry_price
+                fill_price = order_result.get("fill_price", entry_price)
+                actual_sl = fill_price * (1 - sl_pct) if candidate_side == "buy" else fill_price * (1 + sl_pct)
+                # Guard: short SL must be above current price, long SL must be below
+                current_price = assets[[a["symbol"] for a in assets].index(candidate_symbol)]["close"]
+                if candidate_side == "sell" and actual_sl <= current_price:
+                    actual_sl = current_price * (1 + sl_pct)
+                elif candidate_side == "buy" and actual_sl >= current_price:
+                    actual_sl = current_price * (1 - sl_pct)
+                sl_result = place_stoploss(candidate_symbol, candidate_side, sz, actual_sl, profile)
+                print(f"  Stoploss: {sl_result['status']} (trigger={actual_sl:.4f})")
                 if sl_result["status"] == "failed":
                     print(f"  WARNING: Stoploss setup failed! {sl_result.get('error')}")
 

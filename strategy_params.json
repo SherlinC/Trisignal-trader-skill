@@ -6,8 +6,20 @@
     "BTC-USDT-SWAP",
     "ETH-USDT-SWAP",
     "SOL-USDT-SWAP",
-    "XRP-USDT-SWAP"
+    "XRP-USDT-SWAP",
+    "DOGE-USDT-SWAP"
   ],
+  "symbol_rules": {
+    "BTC-USDT-SWAP": {
+      "trade_enabled": false,
+      "score_only": true,
+      "note": "Used as trend anchor only; account too small to trade (need ~4500 USDT)"
+    },
+    "DOGE-USDT-SWAP": {
+      "conservative_entry_risk_multiplier_max": 0.5,
+      "note": "Soft rule: DOGE conservative_entry capped at 0.5x risk multiplier"
+    }
+  },
   "hard_constraints": {
     "risk_per_trade": 0.03,
     "daily_drawdown_limit": 0.08,
@@ -27,9 +39,9 @@
   },
   "position_rules": {
     "strong_entry_risk_multiplier": 1.0,
-    "conservative_entry_risk_multiplier": 0.5,
-    "min_order_size": 0.001,
-    "max_order_size": 1000000
+    "conservative_entry_risk_multiplier": 1.0,
+    "min_order_size": 1,
+    "max_order_size": 500
   },
   "penalty_rules": {
     "funding_crowded_threshold": 0.001,

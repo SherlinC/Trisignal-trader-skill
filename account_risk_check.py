@@ -29,6 +29,7 @@ SYMBOLS = [
     "ETH-USDT-SWAP",
     "SOL-USDT-SWAP",
     "XRP-USDT-SWAP",
+    "DOGE-USDT-SWAP",
 ]
 
 MAX_OPEN_SYMBOLS = 2

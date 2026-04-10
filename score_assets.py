@@ -301,7 +301,7 @@ def score_one_asset(asset: Dict[str, Any]) -> Dict[str, Any]:
 
     ma_score = score_ma_structure(asset)
     macd_score = score_macd(asset, direction)
-    price_score = score_price_structure(asset, direction)
+    price_score = max(0, min(20, asset["trend_strength"] + asset["structure_clarity"]))
     oi_score = score_oi(asset, direction)
     funding_adj = funding_penalty(asset)
     atr_adj = atr_adjustment(asset)
